@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>円周率の近似（正多角形）</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; background: #f0f0f0; }
+        canvas { border: 1px solid #ccc; background: white; margin-top: 20px; }
+        .controls { padding: 20px; background: white; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h3>正多角形による円の近似</h3>
+    <label id="label-n">辺の数 (n): 3</label><br>
+    <input type="range" id="slider-n" min="3" max="200" value="3" style="width: 300px;">
+</div>
+
+<script>
+let sliderN;
+const diameterPx = 300; // 描画上の直径
+const realDiameter = 10; // 計算上の直径 (10cm)
+const radius = diameterPx / 2;
+
+function setup() {
+    createCanvas(800, 500);
+    sliderN = select('#slider-n');
+}
+
+function draw() {
+    background(255);
+    let n = parseInt(sliderN.value());
+    select('#label-n').html(`辺の数 (n): ${n}`);
+
+    // --- ① 左側：円と正多角形の描画 ---
+    push();
+    translate(250, 250);
+    
+    // 外接円
+    stroke(200);
+    noFill();
+    ellipse(0, 0, diameterPx);
+
+    // 正多角形と破線
+    stroke(50);
+    let angleStep = TWO_PI / n;
+    
+    beginShape();
+    for (let i = 0; i <= n; i++) {
+        let x = cos(i * angleStep) * radius;
+        let y = sin(i * angleStep) * radius;
+        vertex(x, y);
+        
+        // ③ 中心からの破線 (描画負荷軽減のためnが小さい時のみ、または間引いて描画)
+        if (n < 50 || i % floor(n/20) === 0) {
+            push();
+            stroke(150);
+            drawingContext.setLineDash([5, 5]);
+            line(0, 0, x, y);
+            pop();
+        }
+    }
+    endShape(CLOSE);
+    pop();
+
+    // --- ② 右側：三角形の抽出表示 ---
+    drawTriangleDetail(n);
+}
+
+function drawTriangleDetail(n) {
+    let centerX = 600;
+    let centerY = 300;
+    let triSize = 150; // 拡大サイズ
+    
+    let angle = TWO_PI / n;
+    // 数学的計算 (直径10cmとした場合)
+    let rReal = realDiameter / 2;
+    let sideLength = 2 * rReal * sin(PI / n);
+    let totalLength = sideLength * n;
+
+    push();
+    translate(centerX, centerY);
+    
+    // 三角形の頂点計算
+    let x0 = 0, y0 = 0;
+    let x1 = cos(-angle/2 - HALF_PI) * triSize;
+    let y1 = sin(-angle/2 - HALF_PI) * triSize;
+    let x2 = cos(angle/2 - HALF_PI) * triSize;
+    let y2 = sin(angle/2 - HALF_PI) * triSize;
+
+    // 三角形の描画
+    fill(230, 240, 255);
+    stroke(0, 100, 255);
+    strokeWeight(2);
+    triangle(x0, y0, x1, y1, x2, y2);
+    
+    // 半径（破線）
+    stroke(150);
+    drawingContext.setLineDash([5, 5]);
+    line(x0, y0, x1, y1);
+    line(x0, y0, x2, y2);
+    
+    // テキスト表示
+    drawingContext.setLineDash([]);
+    noStroke();
+    fill(0);
+    textAlign(CENTER);
+    textSize(14);
+    text(`抽出された三角形 (n=${n})`, 0, -triSize - 20);
+    
+    textSize(12);
+    fill(255, 0, 0);
+    text(`辺の長さ: ${sideLength.toFixed(4)} cm`, (x1+x2)/2, (y1+y2)/2 + 20);
+    
+    fill(0, 150, 0);
+    push();
+    translate(x1/2, y1/2);
+    rotate(-angle/2 - HALF_PI);
+    text(`半径: ${rReal} cm`, 0, -5);
+    pop();
+
+    // 全体の集計
+    textAlign(LEFT);
+    fill(50);
+    textSize(16);
+    text(`[ 計算結果 ]`, -150, 130);
+    text(`多角形の周長: ${totalLength.toFixed(5)} cm`, -150, 155);
+    text(`円周 (10π): ${(PI * realDiameter).toFixed(5)} cm`, -150, 180);
+    pop();
+}
+</script>
+
+</body>
+</html>
